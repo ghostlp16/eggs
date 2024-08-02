@@ -4,38 +4,88 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2023-08-14T15:15:05+02:00",
-    "name": "Sinusbot",
-    "author": "support@pterodactyl.io",
-    "description": "Musicbot for Discord and Teamspeak.",
+    "exported_at": "2024-03-12T09:05:57+00:00",
+    "name": "LeaderOS Discord Bot",
+    "author": "contact@leaderos.net",
+    "description": "Allow players to link their accounts and roles, login with Discord account, and reply support tickets on your Discord server.",
     "features": null,
     "docker_images": {
-        "sinusbot": "ghcr.io\/parkervcp\/yolks:bot_sinusbot"
+        "Node.js 20": "ghcr.io/parkervcp/yolks:nodejs_20"
     },
     "file_denylist": [],
-    "startup": ".\/sinusbot --override-password=\"${OVERRIDE_PASSWORD}\"",
+    "startup": "npm run start",
     "config": {
-        "files": "{\r\n    \"config.ini\": {\r\n        \"parser\": \"file\",\r\n        \"find\": {\r\n            \"ListenPort\": \"ListenPort = {{server.build.default.port}}\",\r\n            \"ListenHost\": \"ListenHost = \\\"0.0.0.0\\\"\"\r\n        }\r\n    }\r\n}",
-        "startup": "{\r\n    \"done\": \"Initialization complete\"\r\n}",
-        "logs": "{}",
-        "stop": "^C"
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Bot started!\"\r\n}",
+        "logs": "{\r\n    \"custom\": true,\r\n    \"location\": \"latest.log\"\r\n}",
+        "stop": "^^C"
     },
     "scripts": {
         "installation": {
-            "script": "#!\/bin\/bash\r\n# Sinusbot Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\napt -y update\r\napt -y --no-install-recommends install ca-certificates bzip2 wget tar curl jq\r\napt -q clean all\r\n\r\n#Create needed directories\r\nmkdir -p \/mnt\/server\/TeamSpeak3-Client-linux_amd64\/plugins\r\nmkdir \/mnt\/server\/youtube-dlp\r\n\r\ncd \/mnt\/server\r\n\r\n#Download Sinusbot\r\nwget -qO - https:\/\/www.sinusbot.com\/dl\/sinusbot.current.tar.bz2 | tar xj\r\n\r\n\r\n#Download Latest TeamSpeak Client\r\n#TS_VERSION=$(curl https:\/\/teamspeak.com\/versions\/client.json | jq -r '.linux.x86_64.version')\r\n#TS_DL_LINK=$(curl https:\/\/teamspeak.com\/versions\/client.json | jq -r '.linux.x86_64.mirrors.\"teamspeak.com\"')\r\n\r\n# Sinusbot is not yet updated...\r\nTS_VERSION=3.5.6\r\nTS_DL_LINK=https:\/\/files.teamspeak-services.com\/releases\/client\/3.5.6\/TeamSpeak3-Client-linux_amd64-3.5.6.run\r\n\r\necho -e \"downloading teamspeak version ${TS_VERSION}\"\r\necho -e \"running 'wget ${TS_DL_LINK}'\"\r\n\r\nwget ${TS_DL_LINK}\r\n\r\n# Install TeamSpeak Client\r\nchmod 0755 TeamSpeak3-Client-linux_amd64*.run\r\n.\/TeamSpeak3-Client-linux_amd64*.run --tar xfv -C TeamSpeak3-Client-linux_amd64\r\n\r\n## Cleaning up \r\n\r\nrm TeamSpeak3-Client-linux_amd64*.run\r\n# Remove glx-integration lib\r\nrm TeamSpeak3-Client-linux_amd64\/xcbglintegrations\/libqxcb-glx-integration.so\r\n\r\n#Install Sinusbot\r\nchmod +x sinusbot\r\ncp config.ini.dist config.ini\r\nsed -i \"s|^TS3Path.*|TS3Path = \\\"\/home\/container\/TeamSpeak3-Client-linux_amd64\/ts3client_linux_amd64\\\"|g\" config.ini\r\necho 'YoutubeDLPath = \"\/home\/container\/youtube-dlp\/youtube-dlp\"' >> config.ini\r\n\r\n#Install Sinusbot plugin\r\ncp plugin\/libsoundbot_plugin.so TeamSpeak3-Client-linux_amd64\/plugins\r\n\r\n#Download youtube-dlp\r\ncd \/mnt\/server\/youtube-dlp\r\nwget https:\/\/github.com\/yt-dlp\/yt-dlp\/releases\/latest\/download\/yt-dlp -O youtube-dlp\r\nchmod a+rx youtube-dlp\r\n\r\necho \"-----------------------------------------\"\r\necho \"Installation completed...\"\r\necho \"-----------------------------------------\"",
-            "container": "ghcr.io\/parkervcp\/installers:debian",
+            "script": "#!/bin/bash\r\napt-get update && apt-get install ca-certificates git -yq --no-install-suggests --no-install-recommends --allow-downgrades --allow-remove-essential --allow-change-held-packages\r\ncd /mnt/server\r\ngit config --global --add safe.directory /mnt/server\r\ngit clone https://github.com/leaderos-net/leaderos-discord-bot.git . || git pull\r\nnpm install\r\necho 'Installation completed successfully!'",
+            "container": "node:20-bullseye-slim",
             "entrypoint": "bash"
         }
     },
     "variables": [
         {
-            "name": "Password",
-            "description": "Password for admin account.",
-            "env_variable": "OVERRIDE_PASSWORD",
+            "name": "Discord Bot Token",
+            "description": "The Bot Token you get from https://discordapp.com/developers/applications/",
+            "env_variable": "DISCORD_BOT_TOKEN",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string|max:20",
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Website URL",
+            "description": "Your website url.",
+            "env_variable": "WEBSITE_URL",
+            "default_value": "https://yourwebsite.com/",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Website API Key",
+            "description": "Your website API Key. (Dashboard > Settings > API)",
+            "env_variable": "API_KEY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Language",
+            "description": "Language of the bot.",
+            "env_variable": "LANGUAGE",
+            "default_value": "en",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:en,tr",
+            "field_type": "text"
+        },
+        {
+            "name": "Debug Mode",
+            "description": "Enable or disable debug mode.",
+            "env_variable": "DEBUG",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Role Sync Cache Period",
+            "description": "Role Sync Cache Period in seconds.",
+            "env_variable": "ROLE_SYNC_CACHE_PERIOD",
+            "default_value": "60",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|numeric",
             "field_type": "text"
         }
     ]
